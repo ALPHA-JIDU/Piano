@@ -19,7 +19,7 @@ jobs:
           mkdir -p app/src/main/res/raw
           python3 - <<'EOF'
           import wave, struct, math, glob
-          freqs = [261.63,277.18,293.66,311.13,329.63,349.23,369.99,392.00,415.30,440.00]
+          freqs = [261.63,293.66,329.63,349.23,392.00]
           for i, f in enumerate(freqs, 1):
               if glob.glob(f"app/src/main/res/raw/note{i}.*"):
                   continue
