@@ -1,0 +1,41 @@
+name: Build APK
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Generate sample piano notes if none provided
+        run: |
+          mkdir -p app/src/main/res/raw
+          python3 - <<'EOF'
+          import wave, struct, math, glob
+          freqs = [261.63,277.18,293.66,311.13,329.63,349.23,369.99,392.00,415.30,440.00]
+          for i, f in enumerate(freqs, 1):
+              if glob.glob(f"app/src/main/res/raw/note{i}.*"):
+                  continue
+              sr, dur = 22050, 1.8
+              w = wave.open(f"app/src/main/res/raw/note{i}.wav", "wb")
+              w.setnchannels(1); w.setsampwidth(2); w.setframerate(sr)
+              for n in range(int(sr*dur)):
+                  t = n/sr
+                  s = sum(a*math.sin(2*math.pi*f*k*t)*math.exp(-t*d)
+                          for k, a, d in [(1,1,2.5),(2,.5,3.5),(3,.25,5),(4,.12,7)])
+                  s *= min(1, t*200) * 0.4
+                  w.writeframes(struct.pack("<h", int(s*32767)))
+              w.close()
+          EOF
+      - run: gradle assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PianoMelody-apk
+          path: app/build/outputs/apk/debug/*.apk
